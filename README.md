@@ -38,13 +38,27 @@ All the supported releases are here:
 
 | Release | x86_64 |
 |---------|---------|
-| 26.1 | ✅ (rsync,scp,sshfs,nfs) |
+| 26.1 | ✅ (rsync,scp,sshfs,nfs,tar) |
 
 <!-- desktop-table: 26.1-xfce -->
 <!-- desktop-table: 26.1-gershwin -->
 <!-- desktop-header: GhostBSD desktop variant images (x86_64): -->
 GhostBSD is published as amd64 (x86_64) only. The release above is the official
 MATE image (`26.1`).
+
+How the images are built:
+
+Each image is built automatically in the
+[anyvm-org/ghostbsd-builder](https://github.com/anyvm-org/ghostbsd-builder)
+repo's GitHub Actions: it downloads the official GhostBSD desktop ISO
+(MATE / XFCE / Gershwin), boots the live desktop in QEMU, drives its
+installer (pc-sysinstall) automatically, enables ssh, pre-installs the
+packages listed in the conf, and exports the installed disk as a
+compressed qcow2 image.
+
+Upstream install media: the official GhostBSD ISOs from
+https://download.ghostbsd.org/releases/ (download page:
+https://www.ghostbsd.org/download).
 
 
 
@@ -66,13 +80,12 @@ jobs:
       MYTOKEN : ${{ secrets.MYTOKEN }}
       MYTOKEN2: "value2"
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Test in GhostBSD
       id: test
       uses: vmactions/ghostbsd-vm@v1
       with:
         envs: 'MYTOKEN MYTOKEN2'
-        usesh: true
         prepare: |
           pkg install -y socat
 
@@ -90,7 +103,7 @@ jobs:
 ```
 
 
-The latest major version is: `v1`, which is the most recommended to use. (You can also use the latest full version: `v1.0.2`)  
+The latest major version is: `v1`, which is the most recommended to use. (You can also use the latest full version: `v1.0.3`)  
 
 
 If you are migrating from the previous `v0`, please change the `runs-on: ` to `runs-on: ubuntu-latest`
@@ -109,6 +122,8 @@ All the source code tree in the Host machine are mounted into the VM.
 All the `GITHUB_*` as well as `CI=true` env variables are passed into the VM.
 
 So, you will have the same directory and same default env variables when you `run` the CI script.
+
+The `prepare` and `run` scripts are always executed with `sh` in the VM, whatever the default login shell of the VM is.
 
 
 
@@ -138,7 +153,7 @@ The code is shared from the host to the VM via `rsync` by default, you can choos
 You can also set `sync: no`, so the files will not be synced to the  VM.
 
 
-When using `rsync` or `scp`,  you can define `copyback: false` to not copy files back from the VM in to the host.
+When using a copy based sync method (`rsync`, `scp`, `tar` or `9p`), you can define `copyback: false` to not copy files back from the VM to the host. It has no effect on `sshfs` and `nfs`, which are live mounts and never copy back.
 
 
 ```yaml
@@ -265,7 +280,7 @@ Support custom shell:
 ```yaml
 ...
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Start VM
       id: vm
       uses: vmactions/ghostbsd-vm@v1
@@ -296,7 +311,7 @@ You can also use `custom-shell-name` to set a custom name for the shell wrapper:
 ```yaml
 ...
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - name: Start VM
       id: vm
       uses: vmactions/ghostbsd-vm@v1
